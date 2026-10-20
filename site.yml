@@ -5,12 +5,16 @@
   vars:
     deploy_user: deploy
     deploy_public_key: "{{ lookup('file', '~/.ssh/ansible_lab.pub') }}"
+    ssh_allowed_users:
+      - deploy
+      - ubuntu
 
   tasks:
     - name: Atualizar o cache do apt
       ansible.builtin.apt:
         update_cache: true
         cache_valid_time: 3600
+      changed_when: false
 
     - name: Atualizar todos os pacotes
       ansible.builtin.apt:
@@ -40,6 +44,24 @@
         user: "{{ deploy_user }}"
         key: "{{ deploy_public_key }}"
         state: present
+
+    - name: Endurecer a configuração do SSH
+      ansible.builtin.copy:
+        dest: /etc/ssh/sshd_config.d/00-hardening.conf
+        content: |
+          PermitRootLogin no
+          PasswordAuthentication no
+          KbdInteractiveAuthentication no
+          PubkeyAuthentication yes
+          MaxAuthTries 3
+          AllowUsers {{ ssh_allowed_users | join(' ') }}
+        owner: root
+        group: root
+        mode: "0644"
+        validate: "/usr/sbin/sshd -t -f %s"
+      notify: reiniciar ssh
+
+
   handlers:
     - name: Verificar se é preciso reiniciar
       ansible.builtin.stat:
@@ -51,4 +73,10 @@
       ansible.builtin.reboot:
         msg: "Reiniciando após a atualização de pacotes"
       when: reboot_required.stat.exists
-      listen: pacotes atualizados 
+      listen: pacotes atualizados
+ 
+    - name: Reiniciar o SSH
+      ansible.builtin.service:
+        name: ssh
+        state: restarted
+      listen: reiniciar ssh
