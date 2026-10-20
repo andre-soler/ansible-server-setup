@@ -1,0 +1,40 @@
+- name: Configuração básica do servidor
+  hosts: lab
+  become: true
+
+  vars:
+    deploy_user: deploy
+    deploy_public_key: "{{ lookup('file', '~/.ssh/ansible_lab.pub') }}"
+
+  tasks:
+    - name: Atualizar o cache do apt
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Atualizar todos os pacotes
+      ansible.builtin.apt:
+        upgrade: dist
+
+    - name: Criar o usuário de deploy
+      ansible.builtin.user:
+        name: "{{ deploy_user }}"
+        shell: /bin/bash
+        groups: sudo
+        append: true
+        create_home: true
+
+    - name: Permitir sudo sem senha para o usuário de deploy
+      ansible.builtin.copy:
+        dest: "/etc/sudoers.d/{{ deploy_user }}"
+        content: "{{ deploy_user }} ALL=(ALL) NOPASSWD:ALL\n"
+        owner: root
+        group: root
+        mode: "0440"
+        validate: "visudo -cf %s"
+
+    - name: Autorizar a chave SSH do usuário de deploy
+      ansible.posix.authorized_key:
+        user: "{{ deploy_user }}"
+        key: "{{ deploy_public_key }}"
+        state: present
