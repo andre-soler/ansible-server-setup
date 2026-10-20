@@ -61,6 +61,32 @@
         validate: "/usr/sbin/sshd -t -f %s"
       notify: reiniciar ssh
 
+    - name: Instalar o UFW
+      ansible.builtin.apt:
+        name: ufw
+        state: present
+
+    - name: Permitir o SSH, com limite de tentativas
+      community.general.ufw:
+        rule: limit
+        port: "22"
+        proto: tcp
+        comment: SSH
+
+    - name: Bloquear conexões de entrada por padrão
+      community.general.ufw:
+        default: deny
+        direction: incoming
+
+    - name: Permitir conexões de saída por padrão
+      community.general.ufw:
+        default: allow
+        direction: outgoing
+
+    - name: Ativar o firewall
+      community.general.ufw:
+        state: enabled
+
 
   handlers:
     - name: Verificar se é preciso reiniciar
