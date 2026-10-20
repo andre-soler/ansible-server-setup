@@ -86,6 +86,36 @@
     - name: Ativar o firewall
       community.general.ufw:
         state: enabled
+    - name: Instalar o Fail2ban
+      ansible.builtin.apt:
+        name:
+          - fail2ban
+          - python3-systemd
+        state: present
+
+    - name: Configurar a proteção do SSH no Fail2ban
+      ansible.builtin.copy:
+        dest: /etc/fail2ban/jail.local
+        content: |
+          [DEFAULT]
+          bantime = 1h
+          findtime = 10m
+          maxretry = 5
+          backend = systemd
+          banaction = ufw
+
+          [sshd]
+          enabled = true
+        owner: root
+        group: root
+        mode: "0644"
+      notify: reiniciar fail2ban
+
+    - name: Garantir que o Fail2ban está rodando
+      ansible.builtin.service:
+        name: fail2ban
+        state: started
+        enabled: true
 
 
   handlers:
@@ -106,3 +136,9 @@
         name: ssh
         state: restarted
       listen: reiniciar ssh
+
+    - name: Reiniciar o Fail2ban
+      ansible.builtin.service:
+        name: fail2ban
+        state: restarted
+      listen: reiniciar fail2ban
