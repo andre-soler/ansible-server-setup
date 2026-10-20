@@ -117,6 +117,21 @@
         state: started
         enabled: true
 
+    - name: Instalar o unattended-upgrades
+      ansible.builtin.apt:
+        name: unattended-upgrades
+        state: present
+
+    - name: Ativar as atualizações automáticas de segurança
+      ansible.builtin.copy:
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Unattended-Upgrade "1";
+        owner: root
+        group: root
+        mode: "0644"
+
 
   handlers:
     - name: Verificar se é preciso reiniciar
