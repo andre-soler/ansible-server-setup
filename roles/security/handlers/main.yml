@@ -1,0 +1,11 @@
+- name: Reiniciar o SSH
+  ansible.builtin.service:
+    name: ssh
+    state: restarted
+  listen: reiniciar ssh
+
+- name: Reiniciar o Fail2ban
+  ansible.builtin.service:
+    name: fail2ban
+    state: restarted
+  listen: reiniciar fail2ban
