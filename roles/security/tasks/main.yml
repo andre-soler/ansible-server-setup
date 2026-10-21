@@ -1,0 +1,87 @@
+- name: Endurecer a configuração do SSH
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/00-hardening.conf
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PubkeyAuthentication yes
+      MaxAuthTries 3
+      AllowUsers {{ ssh_allowed_users | join(' ') }}
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "/usr/sbin/sshd -t -f %s"
+  notify: reiniciar ssh
+
+- name: Instalar o UFW
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+
+- name: Permitir o SSH, com limite de tentativas
+  community.general.ufw:
+    rule: limit
+    port: "22"
+    proto: tcp
+    comment: SSH
+
+- name: Bloquear conexões de entrada por padrão
+  community.general.ufw:
+    default: deny
+    direction: incoming
+
+- name: Permitir conexões de saída por padrão
+  community.general.ufw:
+    default: allow
+    direction: outgoing
+
+- name: Ativar o firewall
+  community.general.ufw:
+    state: enabled
+
+- name: Instalar o Fail2ban
+  ansible.builtin.apt:
+    name:
+      - fail2ban
+      - python3-systemd
+    state: present
+
+- name: Configurar a proteção do SSH no Fail2ban
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.local
+    content: |
+      [DEFAULT]
+      bantime = 1h
+      findtime = 10m
+      maxretry = 5
+      backend = systemd
+      banaction = ufw
+
+      [sshd]
+      enabled = true
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reiniciar fail2ban
+
+- name: Garantir que o Fail2ban está rodando
+  ansible.builtin.service:
+    name: fail2ban
+    state: started
+    enabled: true
+
+- name: Instalar o unattended-upgrades
+  ansible.builtin.apt:
+    name: unattended-upgrades
+    state: present
+
+- name: Ativar as atualizações automáticas de segurança
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+    owner: root
+    group: root
+    mode: "0644"
