@@ -5,3 +5,5 @@
   roles:
     - common
     - security
+    - docker
+    - monitoring

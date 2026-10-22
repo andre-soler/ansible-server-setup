@@ -1,3 +1,9 @@
+- name: Reiniciar o chrony
+  ansible.builtin.service:
+    name: chrony
+    state: restarted
+  listen: reiniciar chrony
+
 - name: Verificar se é preciso reiniciar
   ansible.builtin.stat:
     path: /var/run/reboot-required

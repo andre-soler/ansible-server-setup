@@ -85,3 +85,13 @@
     owner: root
     group: root
     mode: "0644"
+
+- name: Permitir o SSH sem limite para redes confiáveis
+  community.general.ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+    from_ip: "{{ item }}"
+    insert: 1
+    comment: SSH de rede confiável
+  loop: "{{ ssh_trusted_networks }}"
