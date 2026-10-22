@@ -31,6 +31,12 @@
     cache_valid_time: 3600
   changed_when: false
 
+- name: Instalar pacotes básicos para o Ansible
+  ansible.builtin.apt:
+    name:
+      - acl
+    state: present
+
 - name: Atualizar todos os pacotes
   ansible.builtin.apt:
     upgrade: dist

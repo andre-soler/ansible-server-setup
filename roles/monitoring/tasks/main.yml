@@ -1,0 +1,100 @@
+- name: Instalar as dependências do Monitor
+  ansible.builtin.apt:
+    name:
+      - git
+      - msmtp
+      - curl
+    state: present
+
+- name: Permitir que o usuário de deploy leia os logs do sistema
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    groups: adm
+    append: true
+
+- name: Criar a pasta do Monitor
+  ansible.builtin.file:
+    path: "{{ monitoring_dir }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0755"
+
+- name: Baixar o linux-monitoring-stack
+  ansible.builtin.git:
+    repo: "{{ monitoring_repo }}"
+    dest: "{{ monitoring_dir }}"
+    version: "{{ monitoring_version }}"
+  become_user: "{{ deploy_user }}"
+
+- name: Gerar o .env a partir do vault
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ monitoring_dir }}/.env"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0600"
+
+- name: Configurar o msmtp do usuário de deploy
+  ansible.builtin.template:
+    src: msmtprc.j2
+    dest: "/home/{{ deploy_user }}/.msmtprc"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0600"
+
+- name: Instalar o service do relatório
+  ansible.builtin.template:
+    src: linux-monitor-report.service.j2
+    dest: /etc/systemd/system/linux-monitor-report.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: recarregar systemd
+
+- name: Instalar o timer do relatório
+  ansible.builtin.copy:
+    src: "{{ monitoring_dir }}/systemd/linux-monitor-report.timer"
+    dest: /etc/systemd/system/linux-monitor-report.timer
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+  notify: recarregar systemd
+
+- name: Aplicar agora as mudanças no systemd
+  ansible.builtin.meta: flush_handlers
+
+- name: Ativar o timer do relatório
+  ansible.builtin.systemd_service:
+    name: linux-monitor-report.timer
+    state: started
+    enabled: true
+
+- name: Subir a stack de monitoramento
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_dir }}"
+    state: present
+
+- name: Ajustar os recursos da stack para este ambiente
+  ansible.builtin.template:
+    src: docker-compose.override.yml.j2
+    dest: "{{ monitoring_dir }}/docker-compose.override.yml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0644"
+
+- name: Aguardar os serviços ficarem saudáveis
+  ansible.builtin.uri:
+    url: "{{ item }}"
+    status_code: 200
+  register: health
+  until: health.status == 200
+  retries: 60
+  delay: 5
+  loop:
+    - http://localhost:9100/metrics
+    - http://localhost:9090/-/ready
+    - http://localhost:3100/ready
+    - http://localhost:12345/-/ready
+    - http://localhost:3000/api/health
