@@ -1,0 +1,21 @@
+- name: Instalar o Docker e o Docker Compose
+  ansible.builtin.apt:
+    name:
+      - docker.io
+      - docker-compose-v2
+    state: present
+
+- name: Garantir que o Docker está rodando
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Adicionar o usuário de deploy ao grupo docker
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    groups: docker
+    append: true
+
+- name: Reabrir a conexão para aplicar o novo grupo
+  ansible.builtin.meta: reset_connection
