@@ -1,5 +1,5 @@
 - name: Configuração do servidor
-  hosts: lab
+  hosts: all
   become: true
 
   roles:

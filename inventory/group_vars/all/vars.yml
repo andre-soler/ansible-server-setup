@@ -1,0 +1,6 @@
+grafana_admin_password: "{{ vault_grafana_admin_password }}"
+smtp_user: "{{ vault_smtp_user }}"
+smtp_password: "{{ vault_smtp_password }}"
+msmtp_password: "{{ vault_msmtp_password }}"
+report_email: "{{ vault_report_email }}"
+alert_email: "{{ vault_alert_email }}"
