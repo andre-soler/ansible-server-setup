@@ -1,4 +1,4 @@
 monitoring_repo: https://github.com/andre-soler/linux-monitoring-stack.git
 monitoring_version: main
 monitoring_dir: /opt/linux-monitoring-stack
-grafana_mem_limit: 512m
+monitoring_grafana_mem_limit: 512m

@@ -2,7 +2,7 @@ defaults
 auth on
 tls on
 tls_trust_file /etc/ssl/certs/ca-certificates.crt
-logfile /home/{{ deploy_user }}/.msmtp.log
+logfile /home/{{ common_deploy_user }}/.msmtp.log
 
 account gmail
 host smtp.gmail.com

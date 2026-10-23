@@ -1,3 +1,2 @@
-deploy_user: deploy
-deploy_public_key: "{{ lookup('file', '~/.ssh/ansible_lab.pub') }}"
-
+common_deploy_user: deploy
+common_deploy_public_key: "{{ lookup('file', '~/.ssh/ansible_lab.pub') }}"
