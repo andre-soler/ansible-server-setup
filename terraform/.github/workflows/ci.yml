@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ansible-lint:
+    name: Ansible Lint
+    runs-on: ubuntu-24.04
+    env:
+      ANSIBLE_VAULT_PASSWORD_FILE: /tmp/vault-password
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Instalar o ansible-lint
+        run: pipx install ansible-lint
+
+      - name: Instalar as coleções
+        run: ansible-galaxy collection install -r collections/requirements.yml
+
+      - name: Criar uma senha de vault fictícia
+        run: echo "ci-sem-segredos" > /tmp/vault-password
+
+      - name: Rodar o ansible-lint
+        run: ansible-lint
+
+  terraform:
+    name: Terraform
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Conferir a formatação
+        run: terraform fmt -check
+
+      - name: Inicializar sem backend
+        run: terraform init -backend=false
+
+      - name: Validar o código
+        run: terraform validate
