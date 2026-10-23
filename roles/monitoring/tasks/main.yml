@@ -34,6 +34,7 @@
     owner: "{{ deploy_user }}"
     group: "{{ deploy_user }}"
     mode: "0600"
+  diff: false  
 
 - name: Configurar o msmtp do usuário de deploy
   ansible.builtin.template:
@@ -42,6 +43,7 @@
     owner: "{{ deploy_user }}"
     group: "{{ deploy_user }}"
     mode: "0600"
+  diff: false
 
 - name: Instalar o service do relatório
   ansible.builtin.template:
@@ -98,3 +100,4 @@
     - http://localhost:3100/ready
     - http://localhost:12345/-/ready
     - http://localhost:3000/api/health
+  check_mode: false
