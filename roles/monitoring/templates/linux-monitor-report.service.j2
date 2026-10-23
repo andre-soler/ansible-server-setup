@@ -3,5 +3,5 @@ Description=Relatório de monitoramento do sistema
 
 [Service]
 Type=oneshot
-User={{ deploy_user }}
+User={{ common_deploy_user }}
 ExecStart={{ monitoring_dir }}/scripts/send-report.sh

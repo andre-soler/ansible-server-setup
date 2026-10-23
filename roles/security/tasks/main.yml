@@ -7,7 +7,7 @@
       KbdInteractiveAuthentication no
       PubkeyAuthentication yes
       MaxAuthTries 3
-      AllowUsers {{ ssh_allowed_users | join(' ') }}
+      AllowUsers {{ security_ssh_allowed_users | join(' ') }}
     owner: root
     group: root
     mode: "0644"
@@ -94,4 +94,4 @@
     from_ip: "{{ item }}"
     insert: 1
     comment: SSH de rede confiável
-  loop: "{{ ssh_trusted_networks }}"
+  loop: "{{ security_ssh_trusted_networks }}"

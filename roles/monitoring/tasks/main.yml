@@ -8,7 +8,7 @@
 
 - name: Permitir que o usuário de deploy leia os logs do sistema
   ansible.builtin.user:
-    name: "{{ deploy_user }}"
+    name: "{{ common_deploy_user }}"
     groups: adm
     append: true
 
@@ -16,8 +16,8 @@
   ansible.builtin.file:
     path: "{{ monitoring_dir }}"
     state: directory
-    owner: "{{ deploy_user }}"
-    group: "{{ deploy_user }}"
+    owner: "{{ common_deploy_user }}"
+    group: "{{ common_deploy_user }}"
     mode: "0755"
 
 - name: Baixar o linux-monitoring-stack
@@ -25,23 +25,26 @@
     repo: "{{ monitoring_repo }}"
     dest: "{{ monitoring_dir }}"
     version: "{{ monitoring_version }}"
-  become_user: "{{ deploy_user }}"
+  become: true
+  become_user: "{{ common_deploy_user }}"
 
 - name: Gerar o .env a partir do vault
   ansible.builtin.template:
     src: env.j2
     dest: "{{ monitoring_dir }}/.env"
-    owner: "{{ deploy_user }}"
-    group: "{{ deploy_user }}"
+    owner: "{{ common_deploy_user }}"
+    group: "{{ common_deploy_user }}"
     mode: "0600"
+  diff: false
 
 - name: Configurar o msmtp do usuário de deploy
   ansible.builtin.template:
     src: msmtprc.j2
-    dest: "/home/{{ deploy_user }}/.msmtprc"
-    owner: "{{ deploy_user }}"
-    group: "{{ deploy_user }}"
+    dest: "/home/{{ common_deploy_user }}/.msmtprc"
+    owner: "{{ common_deploy_user }}"
+    group: "{{ common_deploy_user }}"
     mode: "0600"
+  diff: false
 
 - name: Instalar o service do relatório
   ansible.builtin.template:
@@ -80,16 +83,16 @@
   ansible.builtin.template:
     src: docker-compose.override.yml.j2
     dest: "{{ monitoring_dir }}/docker-compose.override.yml"
-    owner: "{{ deploy_user }}"
-    group: "{{ deploy_user }}"
+    owner: "{{ common_deploy_user }}"
+    group: "{{ common_deploy_user }}"
     mode: "0644"
 
 - name: Aguardar os serviços ficarem saudáveis
   ansible.builtin.uri:
     url: "{{ item }}"
     status_code: 200
-  register: health
-  until: health.status == 200
+  register: monitoring_health
+  until: monitoring_health.status == 200
   retries: 60
   delay: 5
   loop:
@@ -98,3 +101,4 @@
     - http://localhost:3100/ready
     - http://localhost:12345/-/ready
     - http://localhost:3000/api/health
+  check_mode: false
