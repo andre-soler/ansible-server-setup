@@ -7,4 +7,3 @@ security_ssh_allowed_users:
 
 security_ssh_trusted_networks:
   - 10.0.2.0/24
-
